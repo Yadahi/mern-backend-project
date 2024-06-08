@@ -31,10 +31,10 @@ const getPlaceById = (req, res, next) => {
   res.json({ place });
 };
 
-const getPlaceByUserId = (req, res, next) => {
+const getPlacesByUserId = (req, res, next) => {
   const userId = req.params.uid;
-  const places = DUMMY_PLACES.filter((u) => {
-    return u.creator === userId;
+  const places = DUMMY_PLACES.filter((p) => {
+    return p.creator === userId;
   });
 
   if (!places || places.length === 0) {
@@ -42,7 +42,7 @@ const getPlaceByUserId = (req, res, next) => {
       new HttpError("Could not find a place for the provided user id.", 404)
     );
   }
-  res.json({ places });
+  return res.json({ places });
 };
 
 const createPlace = (req, res, next) => {
@@ -56,7 +56,7 @@ const createPlace = (req, res, next) => {
     creator,
   };
   DUMMY_PLACES.push(createPlace);
-  res.status(201).json({ place: createPlace });
+  return res.status(201).json({ place: createPlace });
 };
 
 const updatePlace = (req, res, next) => {
@@ -81,14 +81,28 @@ const updatePlace = (req, res, next) => {
 
   DUMMY_PLACES[placeIndex] = updatePlace;
 
-  res.status(200).json({ place: updatePlace });
+  return res.status(200).json({ place: updatePlace });
 };
 
-const deletePlace = (req, res, next) => {};
+const deletePlace = (req, res, next) => {
+  const placeId = req.params.pid;
+  if (!placeId) {
+    return next(new HttpError("Invalid data sent", 400));
+  }
+  const placeIndex = DUMMY_PLACES.findIndex((p) => p.id === placeId);
+  if (placeIndex === -1) {
+    return next(
+      new HttpError("Could not find a place for the provided id.", 404)
+    );
+  }
+  DUMMY_PLACES.splice(placeIndex, 1);
+
+  return res.status(200).json({ message: "Deleted place" });
+};
 
 module.exports = {
   getPlaceById,
-  getPlaceByUserId,
+  getPlacesByUserId,
   createPlace,
   updatePlace,
   deletePlace,

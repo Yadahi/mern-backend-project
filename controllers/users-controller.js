@@ -1,4 +1,5 @@
 const { v4: uuidv4 } = require("uuid");
+const { validationResult } = require("express-validator");
 
 const HttpError = require("../models/http-error");
 
@@ -22,6 +23,13 @@ const getUsers = (req, res, next) => {
 };
 
 const createUser = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return next(
+      new HttpError("Invalid inputs passed, please check your data.", 422)
+    );
+  }
+
   const { name, email, password } = req.body;
   if (!name || !email || !password) {
     return next(new HttpError("Invalid data sent", 400));
@@ -42,6 +50,12 @@ const createUser = (req, res, next) => {
 };
 
 const loginUser = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return next(
+      new HttpError("Invalid inputs passed, please check your data.", 422)
+    );
+  }
   const { email, password } = req.body;
   if (!email || !password) {
     return next(new HttpError("Invalid data sent", 400));

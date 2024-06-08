@@ -59,4 +59,37 @@ const createPlace = (req, res, next) => {
   res.status(201).json({ place: createPlace });
 };
 
-module.exports = { getPlaceById, getPlaceByUserId, createPlace };
+const updatePlace = (req, res, next) => {
+  const placeId = req.params.pid;
+  if (!placeId) {
+    return next(new HttpError("Invalid data sent", 400));
+  }
+
+  const updatePlace = { ...DUMMY_PLACES.find((p) => p.id === placeId) };
+  const placeIndex = DUMMY_PLACES.findIndex((p) => p.id === placeId);
+
+  if (!updatePlace) {
+    return next(
+      new HttpError("Could not find a place for the provided id.", 404)
+    );
+  }
+
+  const { title, description } = req.body;
+
+  updatePlace.title = title;
+  updatePlace.description = description;
+
+  DUMMY_PLACES[placeIndex] = updatePlace;
+
+  res.status(200).json({ place: updatePlace });
+};
+
+const deletePlace = (req, res, next) => {};
+
+module.exports = {
+  getPlaceById,
+  getPlaceByUserId,
+  createPlace,
+  updatePlace,
+  deletePlace,
+};

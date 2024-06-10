@@ -1,5 +1,8 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+const MongoClient = require("mongodb").MongoClient;
+const uri = `${process.env.MONGO_SCHEME}://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOSTNAME}/places?retryWrites=true&w=majority`;
+const client = new MongoClient(uri);
 
 const app = express();
 

@@ -1,8 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const MongoClient = require("mongodb").MongoClient;
+const mongoose = require("mongoose");
 const uri = `${process.env.MONGO_SCHEME}://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOSTNAME}/places?retryWrites=true&w=majority`;
-const client = new MongoClient(uri);
 
 const app = express();
 
@@ -29,6 +28,7 @@ app.use((err, req, res, next) => {
     .json({ message: err.message || "An unknown error occurred" });
 });
 
-app.listen(5000, () => {
-  console.log("Server listening on port 5000");
-});
+mongoose
+  .connect(uri)
+  .then(app.listen(5000, () => console.log("Server started on port 5000")))
+  .catch((err) => console.log(err));

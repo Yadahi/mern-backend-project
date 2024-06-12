@@ -33,7 +33,7 @@ const getCoordsForAddress = async (address) => {
       throw new HttpError(`Invalid coordinates for address: ${address}`, 422);
     }
 
-    return { lat, lon };
+    return { lat, lng: lon };
   } catch (error) {
     if (error instanceof HttpError) {
       throw error;

@@ -3,8 +3,7 @@ const { v4: uuidv4 } = require("uuid");
 const { validationResult } = require("express-validator");
 const getCoordsForAddress = require("../util/location");
 
-const MongoClient = require("mongodb").MongoClient;
-const uri = `${process.env.MONGO_SCHEME}://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOSTNAME}/places?retryWrites=true&w=majority`;
+const Place = require("../models/place");
 
 const DUMMY_PLACES = [
   {
@@ -69,31 +68,27 @@ const createPlace = async (req, res, next) => {
     return next(error);
   }
 
-  const createPlace = {
-    // TODO remove id that will be replace by mongodb ObjectId
-    id: uuidv4(),
+  const createdPlace = new Place({
     title,
     description,
-    location: coordinates,
     address,
+    location: coordinates,
+    image:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Empire_State_Building_%28aerial_view%29.jpg/399px-Empire_State_Building_%28aerial_view%29.jpg",
     creator,
-  };
+  });
 
-  // DB CONNECTION
-  const client = new MongoClient(uri);
   try {
-    await client.connect();
-    const db = client.db();
-    const placesCollection = db.collection("places");
-    await placesCollection.insertOne(createPlace);
-  } catch (error) {
+    const result = await createdPlace.save();
+  } catch (err) {
+    const error = new HttpError(
+      "Creating place failed, please try again.",
+      500
+    );
     return next(error);
-  } finally {
-    await client.close();
   }
 
-  DUMMY_PLACES.push(createPlace);
-  return res.status(201).json({ place: createPlace });
+  return res.status(201).json({ place: createdPlace });
 };
 
 const updatePlace = (req, res, next) => {

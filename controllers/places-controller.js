@@ -58,11 +58,9 @@ const getPlacesByUserId = async (req, res, next) => {
       return next(error);
     }
 
-    res
-      .status(200)
-      .json({
-        places: places.map((place) => place.toObject({ getters: true })),
-      });
+    res.status(200).json({
+      places: places.map((place) => place.toObject({ getters: true })),
+    });
   } catch (err) {
     const error = new HttpError(
       "Something went wrong, could not find a place.",
@@ -113,36 +111,46 @@ const createPlace = async (req, res, next) => {
   return res.status(201).json({ place: createdPlace });
 };
 
-const updatePlace = (req, res, next) => {
+const updatePlace = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return next(
       new HttpError("Invalid inputs passed, please check your data.", 422)
     );
   }
-  // TODO remove id that will be replace by mongodb ObjectId
+
   const placeId = req.params.pid;
   if (!placeId) {
     return next(new HttpError("Invalid data sent", 400));
   }
 
-  const updatePlace = { ...DUMMY_PLACES.find((p) => p.id === placeId) };
-  const placeIndex = DUMMY_PLACES.findIndex((p) => p.id === placeId);
+  try {
+    const updatePlace = await Place.findById(placeId);
+    if (!updatePlace) {
+      const error = new HttpError(
+        "Could not find a place for the provided id.",
+        404
+      );
+      return next(error);
+    }
 
-  if (placeIndex === -1) {
-    return next(
-      new HttpError("Could not find a place for the provided id.", 404)
+    const { title, description } = req.body;
+
+    updatePlace.title = title;
+    updatePlace.description = description;
+
+    await updatePlace.save();
+
+    return res
+      .status(200)
+      .json({ place: updatePlace.toObject({ getters: true }) });
+  } catch (err) {
+    const error = new HttpError(
+      "Something went wrong, could not update place.",
+      500
     );
+    return next(error);
   }
-
-  const { title, description } = req.body;
-
-  updatePlace.title = title;
-  updatePlace.description = description;
-
-  DUMMY_PLACES[placeIndex] = updatePlace;
-
-  return res.status(200).json({ place: updatePlace });
 };
 
 const deletePlace = (req, res, next) => {

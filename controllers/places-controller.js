@@ -153,21 +153,43 @@ const updatePlace = async (req, res, next) => {
   }
 };
 
-const deletePlace = (req, res, next) => {
-  // TODO remove id that will be replace by mongodb ObjectId
+/**
+ * Deletes a place with the specified ID from the database.
+ *
+ * @async
+ * @function deletePlace
+ * @param {Object} req - The request object containing the place ID.
+ * @param {Object} res - The response object.
+ * @param {Function} next - The next middleware function.
+ * @returns {Promise<void>} - A Promise that resolves to nothing.
+ */
+const deletePlace = async (req, res, next) => {
+  // Get the place ID from the request params
   const placeId = req.params.pid;
-  if (!placeId) {
-    return next(new HttpError("Invalid data sent", 400));
-  }
-  const placeIndex = DUMMY_PLACES.findIndex((p) => p.id === placeId);
-  if (placeIndex === -1) {
-    return next(
-      new HttpError("Could not find a place for the provided id.", 404)
-    );
-  }
-  DUMMY_PLACES.splice(placeIndex, 1);
 
-  return res.status(200).json({ message: "Deleted place" });
+  try {
+    // Find the place with the specified ID and delete it from the database
+    const deletePlace = await Place.findByIdAndDelete(placeId);
+
+    // If no place was found with the specified ID, return a 404 error
+    if (!deletePlace) {
+      const error = new HttpError(
+        "Could not find a place for the provided id.",
+        404
+      );
+      return next(error);
+    }
+
+    // If the place was successfully deleted, return a 200 message
+    return res.status(200).json({ message: "Deleted place" });
+  } catch (err) {
+    // If an error occurred while deleting the place, return a 500 error
+    const error = new HttpError(
+      "Could not delete the place, please try again later.",
+      500
+    );
+    return next(error);
+  }
 };
 
 module.exports = {

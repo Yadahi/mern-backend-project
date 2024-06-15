@@ -5,28 +5,25 @@ const getCoordsForAddress = require("../util/location");
 
 const Place = require("../models/place");
 
-const DUMMY_PLACES = [
-  {
-    id: "p1",
-    title: "Empire State Building",
-    description: "One of the most famous sky scrapers in the world!",
-    imageUrl:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Empire_State_Building_%28aerial_view%29.jpg/399px-Empire_State_Building_%28aerial_view%29.jpg",
-    address: "20 W 34th St, New York, NY 10001",
-    location: {
-      lat: 40.7484405,
-      lng: -73.9878584,
-    },
-    creator: "u1",
-  },
-];
-
+/**
+ * This function handles the HTTP GET request to retrieve a place by its ID.
+ *
+ * @async
+ * @function getPlaceById
+ * @param {Object} req - The request object containing the place ID.
+ * @param {Object} res - The response object.
+ * @param {Function} next - The next middleware function.
+ * @returns {Promise<void>} - A Promise that resolves to nothing.
+ */
 const getPlaceById = async (req, res, next) => {
+  // Get the place ID from the request parameters
   const placeId = req.params.pid;
 
   try {
+    // Find the place with the specified ID in the database
     const place = await Place.findById(placeId);
 
+    // If the place does not exist, throw a 404 error
     if (!place) {
       const error = new HttpError(
         "Could not find a place for the provided id.",
@@ -35,8 +32,13 @@ const getPlaceById = async (req, res, next) => {
       return next(error);
     }
 
-    res.status(200).json({ place: place.toObject({ getters: true }) });
+    // Convert the place object to a plain JavaScript object with the `getters` option set to true
+    const placeAsObject = place.toObject({ getters: true });
+
+    // Send a JSON response with the place object
+    res.status(200).json({ place: placeAsObject });
   } catch (err) {
+    // If an error occurs while retrieving the place, throw a 500 error
     const error = new HttpError(
       "Something went wrong, could not find a place.",
       500
@@ -45,11 +47,33 @@ const getPlaceById = async (req, res, next) => {
   }
 };
 
+/**
+ * This function handles the HTTP GET request to retrieve all places
+ * created by a specific user.
+ * It expects a request parameter `uid` with the ID of the user.
+ * It first tries to find all places in the database that have the
+ * specified user ID as their creator.
+ * If no places are found or an error occurs, it returns a 404 error.
+ * If places are found, it returns a JSON response with the places.
+ * Each place is converted to a plain JavaScript object using the
+ * `toObject` method with the `getters` option set to true.
+ *
+ * @async
+ * @function getPlacesByUserId
+ * @param {Object} req - The request object containing the user ID.
+ * @param {Object} res - The response object.
+ * @param {Function} next - The next middleware function.
+ * @returns {Promise<void>} - A Promise that resolves to nothing.
+ */
 const getPlacesByUserId = async (req, res, next) => {
+  // Get the user ID from the request parameters
   const userId = req.params.uid;
 
   try {
+    // Find all places in the database that have the specified user ID as their creator
     const places = await Place.find({ creator: userId });
+
+    // If no places are found, return a 404 error
     if (!places || places.length === 0) {
       const error = new HttpError(
         "Could not find a place for the provided user id.",
@@ -58,10 +82,17 @@ const getPlacesByUserId = async (req, res, next) => {
       return next(error);
     }
 
+    // Convert each place to a plain JavaScript object with the `getters` option set to true
+    const placesAsObjects = places.map((place) =>
+      place.toObject({ getters: true })
+    );
+
+    // Return a JSON response with the places
     res.status(200).json({
-      places: places.map((place) => place.toObject({ getters: true })),
+      places: placesAsObjects,
     });
   } catch (err) {
+    // If an error occurs, return a 500 error
     const error = new HttpError(
       "Something went wrong, could not find a place.",
       500
@@ -70,63 +101,100 @@ const getPlacesByUserId = async (req, res, next) => {
   }
 };
 
+/**
+ * This function handles the HTTP POST request to create a new place.
+ * It expects a request body with the title, description, address, and creator
+ * of the new place.
+ * It first checks if the request is valid. If the request is valid, it
+ * retrieves the coordinates for the address using the getCoordsForAddress
+ * function. It then creates a new Place object with the provided data and saves
+ * it to the database. It sends a JSON response with the newly created place
+ * object.
+ *
+ * @async
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @param {Function} next - The next function.
+ */
 const createPlace = async (req, res, next) => {
+  // Check if the request is valid
   const errors = validationResult(req);
 
+  // If the request is not valid, return an error
   if (!errors.isEmpty()) {
     return next(
       new HttpError("Invalid inputs passed, please check your data.", 422)
     );
   }
 
+  // Extract the data from the request body
   const { title, description, address, creator } = req.body;
 
-  let coordinates;
   try {
-    coordinates = await getCoordsForAddress(address);
-  } catch (error) {
-    return next(error);
-  }
+    // Retrieve the coordinates for the address
+    const coordinates = await getCoordsForAddress(address);
 
-  const createdPlace = new Place({
-    title,
-    description,
-    address,
-    location: coordinates,
-    image:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Empire_State_Building_%28aerial_view%29.jpg/399px-Empire_State_Building_%28aerial_view%29.jpg",
-    creator,
-  });
+    // Create a new Place object with the provided data
+    const createdPlace = new Place({
+      title,
+      description,
+      address,
+      location: coordinates,
+      image:
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Empire_State_Building_%28aerial_view%29.jpg/399px-Empire_State_Building_%28aerial_view%29.jpg",
+      creator,
+    });
 
-  try {
-    const result = await createdPlace.save();
+    // Save the new place to the database
+    await createdPlace.save();
+
+    // Send a JSON response with the newly created place object
+    return res.status(201).json({ place: createdPlace });
   } catch (err) {
+    // If an error occurs, return an error
     const error = new HttpError(
       "Creating place failed, please try again.",
       500
     );
     return next(error);
   }
-
-  return res.status(201).json({ place: createdPlace });
 };
 
+/**
+ * This function handles the HTTP PUT request to update a place.
+ * It expects a request body with the new title and description of the place.
+ * It first checks if the request is valid and if the place exists in the database.
+ * If the request is valid and the place exists, it updates the title and description
+ * of the place and saves the changes to the database. It then sends a JSON response
+ * with the updated place object.
+ *
+ * @async
+ * @function updatePlace
+ * @param {Object} req - The request object containing the place ID and updated title and description.
+ * @param {Object} res - The response object.
+ * @param {Function} next - The next middleware function.
+ * @returns {Promise<void>} - A Promise that resolves to nothing.
+ */
 const updatePlace = async (req, res, next) => {
+  // Validate the request body
   const errors = validationResult(req);
+
+  // If the request body is invalid, return a 422 error
   if (!errors.isEmpty()) {
     return next(
       new HttpError("Invalid inputs passed, please check your data.", 422)
     );
   }
 
+  // Get the place ID from the request parameters
   const placeId = req.params.pid;
-  if (!placeId) {
-    return next(new HttpError("Invalid data sent", 400));
-  }
 
   try {
-    const updatePlace = await Place.findById(placeId);
-    if (!updatePlace) {
+    // Find the place with the specified ID in the database
+    const place = await Place.findById(placeId);
+
+    // If the place does not exist, return a 404 error
+    if (!place) {
       const error = new HttpError(
         "Could not find a place for the provided id.",
         404
@@ -134,17 +202,20 @@ const updatePlace = async (req, res, next) => {
       return next(error);
     }
 
+    // Get the new title and description from the request body
     const { title, description } = req.body;
 
-    updatePlace.title = title;
-    updatePlace.description = description;
+    // Update the title and description of the place
+    place.title = title;
+    place.description = description;
 
-    await updatePlace.save();
+    // Save the changes to the database
+    await place.save();
 
-    return res
-      .status(200)
-      .json({ place: updatePlace.toObject({ getters: true }) });
+    // Send a JSON response with the updated place object
+    return res.status(200).json({ place: place.toObject({ getters: true }) });
   } catch (err) {
+    // If an error occurred while updating the place, return a 500 error
     const error = new HttpError(
       "Something went wrong, could not update place.",
       500

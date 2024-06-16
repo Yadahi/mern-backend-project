@@ -19,8 +19,11 @@ const DUMMY_USERS = [
   },
 ];
 
-const getUsers = (req, res, next) => {
-  res.status(200).json({ users: DUMMY_USERS });
+const getUsers = async (req, res, next) => {
+  const users = await User.find({}, "-password");
+  res
+    .status(200)
+    .json({ users: users.map((user) => user.toObject({ getters: true })) });
 };
 
 /**
@@ -86,26 +89,35 @@ const createUser = async (req, res, next) => {
   }
 };
 
-const loginUser = (req, res, next) => {
+const loginUser = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return next(
       new HttpError("Invalid inputs passed, please check your data.", 422)
     );
   }
+
   const { email, password } = req.body;
-  if (!email || !password) {
-    return next(new HttpError("Invalid data sent", 400));
-  }
 
-  const foundUser = DUMMY_USERS.find((u) => u.email === email);
-  if (!foundUser || foundUser.password !== password) {
-    return next(
-      new HttpError("Could not find a user for the provided email.", 401)
+  try {
+    const existingUser = await User.findOne({ email });
+
+    if (!existingUser || existingUser.password !== password) {
+      const error = new HttpError(
+        "Invalid credentials, could not log you in.",
+        401
+      );
+      return next(error);
+    }
+
+    res.json({ message: "Logged in" });
+  } catch (err) {
+    const error = new HttpError(
+      "Logging in failed, please try again later.",
+      500
     );
+    return next(error);
   }
-
-  res.json({ user: foundUser, message: "Logged in" });
 };
 
 module.exports = {

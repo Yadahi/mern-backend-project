@@ -20,10 +20,18 @@ const DUMMY_USERS = [
 ];
 
 const getUsers = async (req, res, next) => {
-  const users = await User.find({}, "-password");
-  res
-    .status(200)
-    .json({ users: users.map((user) => user.toObject({ getters: true })) });
+  try {
+    const users = await User.find({}, "-password");
+    res
+      .status(200)
+      .json({ users: users.map((user) => user.toObject({ getters: true })) });
+  } catch (err) {
+    const error = new HttpError(
+      "Fetching users failed, please try again later.",
+      500
+    );
+    return next(error);
+  }
 };
 
 /**

@@ -50,7 +50,7 @@ const createUser = async (req, res, next) => {
   }
 
   // Extract the name, email, and password from the request body.
-  const { name, email, password, places } = req.body;
+  const { name, email, password } = req.body;
 
   try {
     // Look for a user with the same email in the database.
@@ -72,7 +72,7 @@ const createUser = async (req, res, next) => {
       // Use a default image URL for the user's profile picture.
       image: "https://www.gravatar.com/avatar/205e460b479e2e5b48aec07710c08d50",
       password,
-      places,
+      places: [],
     });
 
     // Save the new user to the database.

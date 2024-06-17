@@ -2,8 +2,10 @@ const HttpError = require("../models/http-error");
 const { v4: uuidv4 } = require("uuid");
 const { validationResult } = require("express-validator");
 const getCoordsForAddress = require("../util/location");
+const mongoose = require("mongoose");
 
 const Place = require("../models/place");
+const User = require("../models/user");
 
 /**
  * This function handles the HTTP GET request to retrieve a place by its ID.
@@ -130,6 +132,14 @@ const createPlace = async (req, res, next) => {
   // Extract the data from the request body
   const { title, description, address, creator } = req.body;
 
+  let user;
+  try {
+    user = await User.findById(creator);
+  } catch (err) {
+    const error = new HttpError("Could not find user for provided id.", 404);
+    return next(error);
+  }
+
   try {
     // Retrieve the coordinates for the address
     const coordinates = await getCoordsForAddress(address);
@@ -145,11 +155,19 @@ const createPlace = async (req, res, next) => {
       creator,
     });
 
+    const sess = await mongoose.startSession();
+    // console.log(sess);
+    sess.startTransaction();
     // Save the new place to the database
-    await createdPlace.save();
+    await createdPlace.save({ session: sess });
+    user.places.push(createdPlace);
+    await user.save({ session: sess });
+    await sess.commitTransaction();
 
     // Send a JSON response with the newly created place object
-    return res.status(201).json({ place: createdPlace });
+    return res
+      .status(201)
+      .json({ place: createdPlace.toObject({ getters: true }) });
   } catch (err) {
     // If an error occurs, return an error
     const error = new HttpError(

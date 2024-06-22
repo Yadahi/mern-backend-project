@@ -127,7 +127,10 @@ const loginUser = async (req, res, next) => {
     }
 
     // If the user exists and the password is correct, return a JSON response with a success message.
-    res.json({ message: "Logged in" });
+    res.json({
+      message: "Logged in",
+      user: existingUser.toObject({ getters: true }),
+    });
   } catch (err) {
     // If it is not a validation error, create a new HttpError object and pass it to the next middleware.
     const error = new HttpError(

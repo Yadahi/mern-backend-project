@@ -1,3 +1,6 @@
+const fs = require("fs");
+const path = require("path");
+
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
@@ -10,6 +13,8 @@ const usersRoutes = require("./routes/users-routes");
 const HttpError = require("./models/http-error");
 
 app.use(bodyParser.json());
+
+app.use("/uploads/images", express.static(path.join("uploads", "images")));
 
 /**
  * Middleware to enable Cross-Origin Resource Sharing (CORS).
@@ -56,6 +61,12 @@ app.use((req, res, next) => {
 });
 
 app.use((err, req, res, next) => {
+  if (req.file) {
+    // If an image file was uploaded, remove it from the file system
+    fs.unlink(req.file.path, (err) => {
+      console.log(err);
+    });
+  }
   if (res.headersSent) {
     return next(err);
   }

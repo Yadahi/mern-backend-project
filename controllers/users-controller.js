@@ -70,7 +70,7 @@ const createUser = async (req, res, next) => {
       name,
       email,
       // Use a default image URL for the user's profile picture.
-      image: "https://www.gravatar.com/avatar/205e460b479e2e5b48aec07710c08d50",
+      image: req.file.path,
       password,
       places: [],
     });

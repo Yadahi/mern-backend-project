@@ -8,6 +8,8 @@ router.get("/", usersController.getUsers);
 
 router.post(
   "/signup",
+  // It indicates that this middleware will handle single file uploads, where the form field name is "image".
+  // When a request is made to this route, fileUpload.single("image") processes the file upload, making the uploaded file available in req.file.
   fileUpload.single("image"),
   [
     check("name").not().isEmpty(),

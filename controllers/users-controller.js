@@ -64,7 +64,6 @@ const createUser = async (req, res, next) => {
       );
       return next(error);
     }
-
     // Create a new user object with the provided name, email, password, and an empty list of places.
     const createdUser = new User({
       name,

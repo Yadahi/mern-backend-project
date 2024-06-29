@@ -3,6 +3,7 @@ const { v4: uuidv4 } = require("uuid");
 const { validationResult } = require("express-validator");
 const getCoordsForAddress = require("../util/location");
 const mongoose = require("mongoose");
+const fs = require("fs");
 
 const Place = require("../models/place");
 const User = require("../models/user");
@@ -279,6 +280,8 @@ const deletePlace = async (req, res, next) => {
     return next(error);
   }
 
+  const imagePath = deletePlace.image;
+
   try {
     // Start a database transaction
     const sess = await mongoose.startSession();
@@ -295,6 +298,10 @@ const deletePlace = async (req, res, next) => {
 
     // Commit the transaction
     await sess.commitTransaction();
+
+    fs.unlink(imagePath, (err) => {
+      console.log(err);
+    });
 
     // Return a 200 message indicating that the place was successfully deleted
     return res.status(200).json({ message: "Deleted place" });

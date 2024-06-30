@@ -103,8 +103,20 @@ const createUser = async (req, res, next) => {
 
 /**
  * Asynchronously logs in a user based on the email and password provided in the request body.
- * If the user does not exist or the password is incorrect, returns an HTTP error with an appropriate status code.
- * If the user exists and the password is correct, returns a JSON response with a success message.
+ *
+ * 1. Checks if the request body contains any validation errors.
+ *    If there are errors, it creates an HttpError with a 422 status code and passes it to the next middleware.
+ *
+ * 2. Extracts the email and password from the request body.
+ *
+ * 3. Looks for a user with the same email in the database.
+ *    If the user does not exist, it creates an HttpError with a 401 status code and passes it to the next middleware.
+ *    If the user exists, it checks if the provided password matches the user's stored password.
+ *    If the passwords do not match, it creates an HttpError with a 401 status code and passes it to the next middleware.
+ *
+ * 4. If the user exists and the password is correct, it returns a JSON response with a success message and the user object.
+ *
+ * 5. If there is an error during the process, it creates an HttpError with an appropriate status code and passes it to the next middleware.
  *
  * @param {Object} req - The request object.
  * @param {Object} res - The response object.
@@ -130,7 +142,7 @@ const loginUser = async (req, res, next) => {
     const existingUser = await User.findOne({ email });
 
     // If the user does not exist or the password is incorrect, create a new HttpError object and pass it to the next middleware.
-    if (!existingUser || existingUser.password !== password) {
+    if (!existingUser) {
       const error = new HttpError(
         "Invalid credentials, could not log you in.",
         401
@@ -138,7 +150,20 @@ const loginUser = async (req, res, next) => {
       return next(error);
     }
 
-    // If the user exists and the password is correct, return a JSON response with a success message.
+    const isValidPassword = await bcrypt.compare(
+      password,
+      existingUser.password
+    );
+
+    if (!isValidPassword) {
+      const error = new HttpError(
+        "Invalid credentials, could not log you in.",
+        401
+      );
+      return next(error);
+    }
+
+    // If the user exists and the password is correct, return a JSON response with a success message and the user object.
     res.json({
       message: "Logged in",
       user: existingUser.toObject({ getters: true }),

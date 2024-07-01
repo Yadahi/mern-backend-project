@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require("uuid");
 const { validationResult } = require("express-validator");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 const HttpError = require("../models/http-error");
 const User = require("../models/user");
@@ -89,8 +90,31 @@ const createUser = async (req, res, next) => {
 
     // Save the new user to the database.
     await createdUser.save();
+
+    let token;
+    try {
+      token = jwt.sign(
+        {
+          userId: createdUser.id,
+          email: createdUser.email,
+        },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: "1h",
+        }
+      );
+    } catch (error) {
+      const err = new HttpError(
+        "Signing up failed, please try again later.",
+        500
+      );
+      return next(err);
+    }
+
     // Return a JSON response with the created user object.
-    res.status(201).json({ user: createdUser.toObject({ getters: true }) });
+    res
+      .status(201)
+      .json({ userId: createdUser.id, email: createdUser.email, token });
   } catch (err) {
     // If it is not a validation error, create a new HttpError object and pass it to the next middleware.
     const error = new HttpError(
@@ -163,10 +187,31 @@ const loginUser = async (req, res, next) => {
       return next(error);
     }
 
+    let token;
+    try {
+      token = jwt.sign(
+        {
+          userId: existingUser.id,
+          email: existingUser.email,
+        },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: "1h",
+        }
+      );
+    } catch (error) {
+      const err = new HttpError(
+        "Logging in failed, please try again later.",
+        500
+      );
+      return next(err);
+    }
+
     // If the user exists and the password is correct, return a JSON response with a success message and the user object.
     res.json({
-      message: "Logged in",
-      user: existingUser.toObject({ getters: true }),
+      userId: existingUser.id,
+      email: existingUser.email,
+      token,
     });
   } catch (err) {
     // If it is not a validation error, create a new HttpError object and pass it to the next middleware.

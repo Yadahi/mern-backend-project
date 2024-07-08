@@ -132,11 +132,11 @@ const createPlace = async (req, res, next) => {
   }
 
   // Extract the data from the request body
-  const { title, description, address, creator } = req.body;
+  const { title, description, address } = req.body;
 
   let user;
   try {
-    user = await User.findById(creator);
+    user = await User.findById(req.userData.userId);
   } catch (err) {
     const error = new HttpError("Could not find user for provided id.", 404);
     return next(error);
@@ -153,7 +153,7 @@ const createPlace = async (req, res, next) => {
       address,
       location: coordinates,
       image: req.file.path,
-      creator,
+      creator: req.userData.userId,
     });
 
     const sess = await mongoose.startSession();

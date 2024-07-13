@@ -88,8 +88,16 @@ const createUser = async (req, res, next) => {
       places: [],
     });
 
-    // Save the new user to the database.
-    await createdUser.save();
+    try {
+      // Save the new user to the database.
+      await createdUser.save();
+    } catch (error) {
+      const err = new HttpError(
+        "Signing up failed, please try again later.",
+        500
+      );
+      return next(err);
+    }
 
     let token;
     try {

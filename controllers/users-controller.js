@@ -120,6 +120,7 @@ const createUser = async (req, res, next) => {
     }
 
     // Return a JSON response with the created user object.
+    log("createdUser", createdUser);
     res
       .status(201)
       .json({ userId: createdUser.id, email: createdUser.email, token });

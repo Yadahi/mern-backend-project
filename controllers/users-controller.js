@@ -83,7 +83,7 @@ const createUser = async (req, res, next) => {
       name,
       email,
       // Use a default image URL for the user's profile picture.
-      image: req.file.path,
+      image: req.file?.path,
       password: hashedPassword,
       places: [],
     });

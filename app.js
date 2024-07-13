@@ -11,6 +11,7 @@ const app = express();
 const placesRoutes = require("./routes/places-routes");
 const usersRoutes = require("./routes/users-routes");
 const HttpError = require("./models/http-error");
+const { log } = require("console");
 
 app.use(bodyParser.json());
 
@@ -52,13 +53,13 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use((req, res, next) => {
-  console.log("req", req);
-  next();
-});
-
 app.use("/api/places", placesRoutes);
 app.use("/api/users", usersRoutes);
+
+app.use((req, res, next) => {
+  console.log("req", req.body);
+  next();
+});
 
 app.use((req, res, next) => {
   const error = new HttpError("Could not find this route.", 404);
@@ -75,6 +76,8 @@ app.use((err, req, res, next) => {
   if (res.headersSent) {
     return next(err);
   }
+
+  console.log("ERROR", err);
   res
     .status(err.code || 500)
     .json({ message: err.message || "An unknown error occurred" });

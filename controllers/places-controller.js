@@ -157,7 +157,6 @@ const createPlace = async (req, res, next) => {
     });
 
     const sess = await mongoose.startSession();
-    // console.log(sess);
     sess.startTransaction();
     // Save the new place to the database
     await createdPlace.save({ session: sess });

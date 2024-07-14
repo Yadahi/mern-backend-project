@@ -120,12 +120,10 @@ const createUser = async (req, res, next) => {
     }
 
     // Return a JSON response with the created user object.
-    console.log("createdUser", createdUser);
     res
       .status(201)
       .json({ userId: createdUser.id, email: createdUser.email, token });
   } catch (err) {
-    console.log("err", err);
     // If it is not a validation error, create a new HttpError object and pass it to the next middleware.
     const error = new HttpError(
       "Signing up failed, please try again later.",
